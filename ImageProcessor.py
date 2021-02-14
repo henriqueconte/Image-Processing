@@ -41,25 +41,23 @@ class ImageProcessor(Tk):
 
         # Setups original image
         imagePath = "./test_images/Space_187k.jpg"
-        originalImage = Image.open(imagePath)
-        originalImage.thumbnail((512, 512))
+        self.originalImage = Image.open(imagePath)
+        self.originalImage.thumbnail((512, 512))
 
         # Setups working image
-        workingImage = originalImage.copy()
+        self.workingImage = self.originalImage.copy()
 
-        # Adds image to canvas
-        self.originalTkImage = ImageTk.PhotoImage(originalImage)
-        self.workingTkImage = ImageTk.PhotoImage(workingImage)
+        # Adds images to canvas
+        self.originalTkImage = ImageTk.PhotoImage(self.originalImage)
+        self.workingTkImage = ImageTk.PhotoImage(self.workingImage)
 
         self.canvasItem = self.canvas.create_image(10, 30, anchor = 'nw', image = self.originalTkImage)
-        self.workingCanvasItem = self.canvas.create_image(originalImage.size[0] + 20, 30, anchor = 'nw', image = self.workingTkImage)
+        self.workingCanvasItem = self.canvas.create_image(self.originalImage.size[0] + 20, 30, anchor = 'nw', image = self.workingTkImage)
 
-        self.canvas.config(width = originalImage.size[0] * 2 + 35, height = originalImage.size[1] * 1.3)
-
-
+        self.canvas.config(width = self.originalImage.size[0] * 2 + 35, height = self.originalImage.size[1] * 1.3)
 
     def save(self):
-        print("")
+        self.workingImage.save("editedImage.jpg")
 
     def horizontalMirror(self):
         print("")
