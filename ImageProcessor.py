@@ -60,16 +60,35 @@ class ImageProcessor(Tk):
         self.workingImage.save("editedImage.jpg")
 
     def horizontalMirror(self):
-        print("")
+        pixelMap = self.workingImage.load()
+
+        for i in range(0, self.workingImage.size[0]):
+            for j in range(0, self.workingImage.size[1]):
+                pixelMap[i,j] = (0, 0, 0)
+                #print(pixelMap[i,j])
+
+        #updateImage()
 
     def verticalMirror(self):
         print("")
 
     def greyImage(self):
-        print('')
+        pixelMap = self.workingImage.load()
+
+        for i in range(0, self.workingImage.size[0]):
+            for j in range(0, self.workingImage.size[1]):
+                pixel = pixelMap[i,j]
+                luminance = int(pixel[0] * 0.299 + pixel[1] * 0.587 + pixel[2] * 0.114)
+                pixelMap[i,j] = (luminance, luminance, luminance, 0)
+
+        self.updateImage(self.workingImage)
 
     def quantization(self):
         print("")
+
+    def updateImage(self, newImage):
+        self.workingTkImage = ImageTk.PhotoImage(newImage)
+        self.canvas.itemconfigure(self.workingCanvasItem, image = self.workingTkImage)
 
 class ImageButcher(Tk):
     def __init__(self):
