@@ -40,17 +40,23 @@ class ImageProcessor(Tk):
         self.canvas.pack(fill = "both", expand = 1)
 
         # Setups original image
-        imagePath = "./test_images/Gramado_22k.jpg"
+        imagePath = "./test_images/Space_187k.jpg"
         originalImage = Image.open(imagePath)
         originalImage.thumbnail((512, 512))
 
-        # Adds image to canvas
-        self.tkImage = ImageTk.PhotoImage(originalImage)
-        self.canvasItem = self.canvas.create_image(0, 0, anchor = 'nw', image = self.tkImage)
-        self.canvas.config(width = originalImage.size[0], height = originalImage.size[1] * 2)
+        # Setups working image
+        workingImage = originalImage.copy()
 
-        self.currentImage = originalImage
-        self.workingImage = originalImage.copy()
+        # Adds image to canvas
+        self.originalTkImage = ImageTk.PhotoImage(originalImage)
+        self.workingTkImage = ImageTk.PhotoImage(workingImage)
+
+        self.canvasItem = self.canvas.create_image(10, 30, anchor = 'nw', image = self.originalTkImage)
+        self.workingCanvasItem = self.canvas.create_image(originalImage.size[0] + 20, 30, anchor = 'nw', image = self.workingTkImage)
+
+        self.canvas.config(width = originalImage.size[0] * 2 + 35, height = originalImage.size[1] * 1.3)
+
+
 
     def save(self):
         print("")
