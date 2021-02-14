@@ -60,7 +60,15 @@ class ImageProcessor(Tk):
         self.workingImage.save("editedImage.jpg")
 
     def horizontalMirror(self):
-        print("")
+        copiedImage = self.workingImage.copy()
+        originalPixelMap = copiedImage.load()
+        workingPixelMap = self.workingImage.load()
+        
+        for i in range(0, self.workingImage.size[0]):
+            for j in range(0, self.workingImage.size[1]):
+                workingPixelMap[i,j] = originalPixelMap[self.workingImage.size[0] - i - 1, j]
+
+        self.updateImage(self.workingImage)
 
     def verticalMirror(self):
         copiedImage = self.workingImage.copy()
@@ -69,7 +77,7 @@ class ImageProcessor(Tk):
         
         for i in range(0, self.workingImage.size[0]):
             for j in range(0, self.workingImage.size[1]):
-                workingPixelMap[i,j] = originalPixelMap[self.workingImage.size[0] - i - 1, self.workingImage.size[1] - j - 1]
+                workingPixelMap[i,j] = originalPixelMap[i, self.workingImage.size[1] - j - 1]
 
         self.updateImage(self.workingImage)
 
