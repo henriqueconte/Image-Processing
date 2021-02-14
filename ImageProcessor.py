@@ -1,13 +1,3 @@
-'''
-from tkinter import * 
-#from PIL import Image, ImageTk, ImageDraw, ImageOps, ImageEnhance
-from PIL import Image
-
-imagePath = "./test_images/Gramado_22k.jpg"
-image = Image.open(imagePath)
-image.show()
-print(image)
-'''
 from tkinter import * 
 from PIL import Image, ImageTk, ImageDraw, ImageOps, ImageEnhance
 
@@ -93,77 +83,54 @@ class ImageProcessor(Tk):
         self.updateImage(self.workingImage)
 
     def quantization(self):
-        print("")
+        shadeLimit = 4
+        self.greyImage()
+
+        copiedImage = self.workingImage.copy()
+        originalPixelMap = copiedImage.load()
+        workingPixelMap = self.workingImage.load()
+
+        maxColor = -1
+        minColor = 99999999
+
+        for i in range(0, self.workingImage.size[0]):
+            for j in range(0, self.workingImage.size[1]):
+                pixel = originalPixelMap[i,j]
+
+                if pixel[0] > maxColor:
+                    maxColor = pixel[0]
+
+                if pixel[0] < minColor:
+                    minColor = pixel[0]
+
+        tam_int = maxColor - minColor + 1
+
+        if shadeLimit < tam_int:
+            binSize = tam_int / shadeLimit
+            binBoundaries = []
+            binColorList = []
+
+            for i in range(0, shadeLimit):
+                binBoundaries.append(binSize * i)
+                newColor = int((binSize * i + binSize * (i + 1)) / 2)
+                binColorList.append(newColor)
+
+
+        for i in range(0, self.workingImage.size[0]):
+            for j in range(0, self.workingImage.size[1]):
+                pixel = workingPixelMap[i,j]
+
+                for colorIndex in range(0, len(binBoundaries)):
+                    if (colorIndex == len(binBoundaries) - 1) or (pixel[0] >= binBoundaries[colorIndex] and pixel[0] < binBoundaries[colorIndex + 1]):
+                        currentColor = binColorList[colorIndex]
+                        workingPixelMap[i, j] = (currentColor, currentColor, currentColor, 0)
+                        break
+
+        self.updateImage(self.workingImage)
 
     def updateImage(self, newImage):
         self.workingTkImage = ImageTk.PhotoImage(newImage)
         self.canvas.itemconfigure(self.workingCanvasItem, image = self.workingTkImage)
-
-class ImageButcher(Tk):
-    def __init__(self):
-        Tk.__init__(self)
-
-        #create ui
-        f = Frame(self, bd=2)
-
-        self.colour = StringVar(self)
-        self.colourMenu = OptionMenu(f, self.colour,
-                                     *('red','green','blue','white'))
-        self.colourMenu.config(width=5)
-        self.colour.set('red')
-        self.colourMenu.pack(side='left')
-
-        self.rectangleButton = Button(f, text='Rectangle',
-                                    command=self.draw_rectangle)
-        self.rectangleButton.pack(side='left')
-
-        self.brightenButton = Button(f, text='Brighten',
-                                    command=self.on_brighten)
-        self.brightenButton.pack(side='left')
-
-        self.mirrorButton = Button(f, text='Mirror',
-                                    command=self.on_mirror)
-        self.mirrorButton.pack(side='left')
-        f.pack(fill='x')
-
-        self.c = Canvas(self, bd=0, highlightthickness=0,
-                        width=100, height=100)
-        self.c.pack(fill='both', expand=1)
-
-        #load image
-        im = Image.open('./test_images/Gramado_22k.jpg')
-        im.thumbnail((512,512))
-
-        self.tkphoto = ImageTk.PhotoImage(im)
-        self.canvasItem = self.c.create_image(0,0,anchor='nw',image=self.tkphoto)
-        self.c.config(width=im.size[0], height=im.size[1])
-
-        self.img = im
-        self.temp = im.copy() # 'working' image
-
-    def display_image(self, aImage):
-        self.tkphoto = pic = ImageTk.PhotoImage(aImage)
-        self.c.itemconfigure(self.canvasItem, image=pic)
-
-    def on_mirror(self):
-        im = ImageOps.mirror(self.temp)
-        self.display_image(im)
-        self.temp = im
-
-    def on_brighten(self):
-        brightener = ImageEnhance.Brightness(self.temp)
-        self.temp = brightener.enhance(1.1) # +10%
-        self.display_image(self.temp)
-
-    def draw_rectangle(self):
-        bbox = 9, 9, self.temp.size[0] - 11, self.temp.size[1] - 11        
-        draw = ImageDraw.Draw(self.temp)
-        draw.rectangle(bbox, outline=self.colour.get())
-        self.display_image(self.temp)
-
-
-#app = ImageButcher()
-#app.mainloop()
 
 imageProcessor = ImageProcessor()
 imageProcessor.mainloop()
