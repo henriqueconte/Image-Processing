@@ -1,7 +1,5 @@
 from tkinter import * 
 from PIL import Image, ImageTk, ImageDraw, ImageOps, ImageEnhance
-# import numpy as np
-# import cv2
 import matplotlib.pyplot as plt 
 
 class ImageProcessor(Tk):
@@ -46,7 +44,7 @@ class ImageProcessor(Tk):
         self.decreaseConstrastButton = Button(secondRowButtonFrame, text="Diminuir contraste", command = self.decreaseContrast)
         self.increaseConstrastButton = Button(secondRowButtonFrame, text="Aumentar contrsate", command = self.increaseContrast)
         self.negativeImageButton = Button(secondRowButtonFrame, text="Negativo", command = self.negativeImage)
-        self.histogramEqualizationButton = Button(secondRowButtonFrame, text="Equalização de histograma", command = self.histogramEqualization)
+        self.histogramEqualizationButton = Button(secondRowButtonFrame, text="Equalização de histograma", command = self.greyHistogramEqualization)
 
         # Setups buttons on canvas
         self.decreaseConstrastButton.pack(side='left')
@@ -115,12 +113,13 @@ class ImageProcessor(Tk):
         return pixelMap
 
     def getGreyImage(self):
-        pixelMap = self.workingImage.load()
+        copiedImage = self.workingImage.copy()
+        pixelMap = copiedImage.load()
 
         grayPixelMap = self.getGreyImageMap()
 
-        for i in range(0, self.workingImage.size[0]):
-            for j in range(0, self.workingImage.size[1]):
+        for i in range(0, copiedImage.size[0]):
+            for j in range(0, copiedImage.size[1]):
                 pixelMap[i,j] = grayPixelMap[i,j]
 
         return self.workingImage
@@ -267,8 +266,38 @@ class ImageProcessor(Tk):
 
         self.updateImage(self.workingImage)
 
-    def histogramEqualization(self):
-        pass
+    def greyHistogramEqualization(self):
+        grayImage = self.getGreyImage()
+        copiedImage = self.workingImage.copy()
+        scalingFactor = 255 / (copiedImage.size[0] * copiedImage.size[1])
+        r,g,b = grayImage.split()
+        histogram = r.histogram()
+        cummulativeHistogram = [scalingFactor * histogram[0]]
+
+        for i in range(1, len(histogram)):
+            cummulativeHistogram.append(scalingFactor * histogram[i] + cummulativeHistogram[i - 1])
+
+        pixelMap = copiedImage.load()
+        grayPixelMap = grayImage.load()
+
+        for i in range(0, copiedImage.size[0]):
+            for j in range(0, copiedImage.size[1]):
+                grayPixel = grayPixelMap[i,j]
+                grayShade = int(cummulativeHistogram[grayPixel[0]])
+                pixelMap[i,j] = (grayShade, grayShade, grayShade)
+
+        self.openNewWindow(copiedImage)
+
+    def openNewWindow(self, displayedImage):
+        windowTkImage = ImageTk.PhotoImage(displayedImage)
+
+        newWindow = Toplevel(self)
+        newWindow.title("Histograma equalizado")
+
+        newCanvas = Canvas(newWindow, width = 550, height = 450)
+        newCanvas.pack()
+        newCanvas.create_image(10, 30, anchor = 'nw', image = windowTkImage)
+        newCanvas.currentImage = windowTkImage
 
 imageProcessor = ImageProcessor()
 imageProcessor.mainloop()
