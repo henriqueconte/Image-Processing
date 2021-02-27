@@ -1,8 +1,14 @@
 from tkinter import * 
 from PIL import Image, ImageTk, ImageDraw, ImageOps, ImageEnhance
+# import numpy as np
+# import cv2
+import matplotlib.pyplot as plt 
 
 class ImageProcessor(Tk):
-    
+
+    brightnessCount = 0
+    contrastCount = 0
+
     def __init__(self):
         Tk.__init__(self)
         self.setupInterface()
@@ -10,12 +16,16 @@ class ImageProcessor(Tk):
     def setupInterface(self):
         buttonFrame = Frame(self, bd=3)        
 
+        ### FIRST ROW
         # Creates interface buttons
         self.saveButton = Button(buttonFrame, text = "Salvar", command = self.save)
         self.horizontalMirrorButton = Button(buttonFrame, text="Espelhamento horizontal", command = self.horizontalMirror)
         self.verticalMirrorButton = Button(buttonFrame, text="Espelhamento vertical", command = self.verticalMirror)
         self.greyImageButton = Button(buttonFrame, text="Tons de cinza", command = self.greyImage)
         self.quantizationButton = Button(buttonFrame, text = "Quantização", command = self.quantization)
+        self.histogramButton = Button(buttonFrame, text = "Ver histograma", command = self.showHistogram)
+        self.decreaseBrightnessButton = Button(buttonFrame, text="Diminuir brilho", command = self.decreaseBrightness)
+        self.increaseBrightnessButton = Button(buttonFrame, text="Aumentar brilho", command = self.increaseBrightness)  
 
         # Setups buttons on canvas
         self.saveButton.pack(side = 'left')
@@ -23,7 +33,28 @@ class ImageProcessor(Tk):
         self.verticalMirrorButton.pack(side='left')
         self.greyImageButton.pack(side='left')
         self.quantizationButton.pack(side='left')
-        buttonFrame.pack(fill = 'x')
+        self.histogramButton.pack(side = 'left')
+        self.decreaseBrightnessButton.pack(side = 'left')
+        self.increaseBrightnessButton.pack(side = 'left')
+
+        buttonFrame.pack(fill = 'x')    
+
+        ### SECOND ROW
+        secondRowButtonFrame = Frame(self, bd=3) 
+        # Creates interface buttons     
+
+        self.decreaseConstrastButton = Button(secondRowButtonFrame, text="Diminuir contraste", command = self.decreaseContrast)
+        self.increaseConstrastButton = Button(secondRowButtonFrame, text="Aumentar contrsate", command = self.increaseContrast)
+        self.negativeImageButton = Button(secondRowButtonFrame, text="Negativo", command = self.negativeImage)
+        self.histogramEqualizationButton = Button(secondRowButtonFrame, text="Equalização de histograma", command = self.histogramEqualization)
+
+        # Setups buttons on canvas
+        self.decreaseConstrastButton.pack(side='left')
+        self.increaseConstrastButton.pack(side='left')
+        self.negativeImageButton.pack(side='left')
+        self.histogramEqualizationButton.pack(side='left')
+
+        secondRowButtonFrame.pack(fill = 'x', pady = 1)
 
         # Creates canvas
         self.canvas = Canvas(self, bd = 0, highlightthickness = 0, width = 200, height = 200)
@@ -71,14 +102,37 @@ class ImageProcessor(Tk):
 
         self.updateImage(self.workingImage)
 
-    def greyImage(self):
-        pixelMap = self.workingImage.load()
+    def getGreyImageMap(self):
+        copiedImage = self.workingImage.copy()
+        pixelMap = copiedImage.load()
 
-        for i in range(0, self.workingImage.size[0]):
-            for j in range(0, self.workingImage.size[1]):
+        for i in range(0, copiedImage.size[0]):
+            for j in range(0, copiedImage.size[1]):
                 pixel = pixelMap[i,j]
                 luminance = int(pixel[0] * 0.299 + pixel[1] * 0.587 + pixel[2] * 0.114)
                 pixelMap[i,j] = (luminance, luminance, luminance, 0)
+
+        return pixelMap
+
+    def getGreyImage(self):
+        pixelMap = self.workingImage.load()
+
+        grayPixelMap = self.getGreyImageMap()
+
+        for i in range(0, self.workingImage.size[0]):
+            for j in range(0, self.workingImage.size[1]):
+                pixelMap[i,j] = grayPixelMap[i,j]
+
+        return self.workingImage
+
+    def greyImage(self):
+        pixelMap = self.workingImage.load()
+
+        grayPixelMap = self.getGreyImageMap()
+
+        for i in range(0, self.workingImage.size[0]):
+            for j in range(0, self.workingImage.size[1]):
+                pixelMap[i,j] = grayPixelMap[i,j]
 
         self.updateImage(self.workingImage)
 
@@ -131,6 +185,90 @@ class ImageProcessor(Tk):
     def updateImage(self, newImage):
         self.workingTkImage = ImageTk.PhotoImage(newImage)
         self.canvas.itemconfigure(self.workingCanvasItem, image = self.workingTkImage)
+
+    def showHistogram(self):
+        copiedImage = self.getGreyImage()
+        r,g,b = copiedImage.split()
+        histValues = r.histogram()
+        histSum = 0
+
+        for element in histValues:
+            histSum += element
+        for i in range(0, 256):
+            plt.bar(i, histValues[i] / histSum , color = 'green')
+
+        plt.show()
+
+    def changeBrightness(self):
+        originalPixelMap = self.originalImage.load()
+        pixelMap = self.workingImage.load()
+
+        for i in range(0, self.originalImage.size[0]):
+            for j in range(0, self.originalImage.size[1]):
+                pixel = originalPixelMap[i,j]
+                pixel0 = pixel[0] + 10 * self.brightnessCount
+                pixel1 = pixel[1] + 10 * self.brightnessCount
+                pixel2 = pixel[2] + 10 * self.brightnessCount
+                if pixel0 < 0:
+                    pixel0 = 0
+                if pixel1 < 0:
+                    pixel1 = 0
+                if pixel2 < 0:
+                    pixel2 = 0
+
+                pixelMap[i,j] = (pixel0, pixel1, pixel2)
+
+        self.updateImage(self.workingImage)
+
+    def decreaseBrightness(self):
+        self.brightnessCount -= 1
+        self.changeBrightness()
+
+    def increaseBrightness(self):
+        self.brightnessCount += 1
+        self.changeBrightness()
+
+    def changeContrast(self):
+        originalPixelMap = self.originalImage.load()
+        pixelMap = self.workingImage.load()
+
+        for i in range(0, self.originalImage.size[0]):
+            for j in range(0, self.originalImage.size[1]):
+                pixel = originalPixelMap[i,j]
+                pixel0 = pow(pixel[0], (1 + (self.brightnessCount * 0.05)))
+                pixel1 = pow(pixel[1], (1 + (self.brightnessCount * 0.05)))
+                pixel2 = pow(pixel[2], (1 + (self.brightnessCount * 0.05)))
+                if pixel0 < 0:
+                    pixel0 = 0
+                if pixel1 < 0:
+                    pixel1 = 0
+                if pixel2 < 0:
+                    pixel2 = 0
+
+                pixelMap[i,j] = (int(pixel0), int(pixel1), int(pixel2))
+
+        self.updateImage(self.workingImage)
+        
+    def decreaseContrast(self):
+        self.brightnessCount -= 1
+        self.changeContrast()
+
+    def increaseContrast(self):
+        self.brightnessCount += 1
+        self.changeContrast()
+
+    def negativeImage(self):
+        pixelMap = self.workingImage.load()
+
+        for i in range(0, self.workingImage.size[0]):
+            for j in range(0, self.workingImage.size[1]):
+                pixel = pixelMap[i,j]
+                pixelMap[i,j] = (255 - pixel[0], 255 - pixel[1], 255 - pixel[2])
+
+        self.updateImage(self.workingImage)
+
+    def histogramEqualization(self):
+        pass
 
 imageProcessor = ImageProcessor()
 imageProcessor.mainloop()
