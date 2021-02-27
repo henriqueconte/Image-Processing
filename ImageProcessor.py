@@ -6,6 +6,7 @@ class ImageProcessor(Tk):
 
     brightnessCount = 0
     contrastCount = 0
+    isCurrentlyGray = False
 
     def __init__(self):
         Tk.__init__(self)
@@ -45,12 +46,14 @@ class ImageProcessor(Tk):
         self.increaseConstrastButton = Button(secondRowButtonFrame, text="Aumentar contrsate", command = self.increaseContrast)
         self.negativeImageButton = Button(secondRowButtonFrame, text="Negativo", command = self.negativeImage)
         self.histogramEqualizationButton = Button(secondRowButtonFrame, text="Equalização de histograma", command = self.greyHistogramEqualization)
+        self.histogramMatchingButton = Button(secondRowButtonFrame, text="Histogram matching", command = self.histogramMatching)
 
         # Setups buttons on canvas
         self.decreaseConstrastButton.pack(side='left')
         self.increaseConstrastButton.pack(side='left')
         self.negativeImageButton.pack(side='left')
         self.histogramEqualizationButton.pack(side='left')
+        self.histogramMatchingButton.pack(side = 'left')
 
         secondRowButtonFrame.pack(fill = 'x', pady = 1)
 
@@ -100,8 +103,8 @@ class ImageProcessor(Tk):
 
         self.updateImage(self.workingImage)
 
-    def getGreyImageMap(self):
-        copiedImage = self.workingImage.copy()
+    def getGreyImageMap(self, image):
+        copiedImage = image.copy()
         pixelMap = copiedImage.load()
 
         for i in range(0, copiedImage.size[0]):
@@ -112,22 +115,23 @@ class ImageProcessor(Tk):
 
         return pixelMap
 
-    def getGreyImage(self):
-        copiedImage = self.workingImage.copy()
+    def getGreyImage(self, image):
+        copiedImage = image.copy()
         pixelMap = copiedImage.load()
 
-        grayPixelMap = self.getGreyImageMap()
+        grayPixelMap = self.getGreyImageMap(image)
 
         for i in range(0, copiedImage.size[0]):
             for j in range(0, copiedImage.size[1]):
                 pixelMap[i,j] = grayPixelMap[i,j]
 
-        return self.workingImage
+        return image
 
     def greyImage(self):
+        self.isCurrentlyGray = True
         pixelMap = self.workingImage.load()
 
-        grayPixelMap = self.getGreyImageMap()
+        grayPixelMap = self.getGreyImageMap(self.workingImage)
 
         for i in range(0, self.workingImage.size[0]):
             for j in range(0, self.workingImage.size[1]):
@@ -186,7 +190,7 @@ class ImageProcessor(Tk):
         self.canvas.itemconfigure(self.workingCanvasItem, image = self.workingTkImage)
 
     def showHistogram(self):
-        copiedImage = self.getGreyImage()
+        copiedImage = self.getGreyImage(self.workingImage)
         r,g,b = copiedImage.split()
         histValues = r.histogram()
         histSum = 0
@@ -199,7 +203,11 @@ class ImageProcessor(Tk):
         plt.show()
 
     def changeBrightness(self):
-        originalPixelMap = self.originalImage.load()
+        if self.isCurrentlyGray:
+            originalPixelMap = self.getGreyImageMap(self.originalImage)
+        else:
+            originalPixelMap = self.originalImage.load()
+
         pixelMap = self.workingImage.load()
 
         for i in range(0, self.originalImage.size[0]):
@@ -228,7 +236,10 @@ class ImageProcessor(Tk):
         self.changeBrightness()
 
     def changeContrast(self):
-        originalPixelMap = self.originalImage.load()
+        if self.isCurrentlyGray:
+            originalPixelMap = self.getGreyImageMap(self.originalImage)
+        else:
+            originalPixelMap = self.originalImage.load()
         pixelMap = self.workingImage.load()
 
         for i in range(0, self.originalImage.size[0]):
@@ -267,7 +278,7 @@ class ImageProcessor(Tk):
         self.updateImage(self.workingImage)
 
     def greyHistogramEqualization(self):
-        grayImage = self.getGreyImage()
+        grayImage = self.getGreyImage(self.workingImage)
         copiedImage = self.workingImage.copy()
         scalingFactor = 255 / (copiedImage.size[0] * copiedImage.size[1])
         r,g,b = grayImage.split()
@@ -286,18 +297,47 @@ class ImageProcessor(Tk):
                 grayShade = int(cummulativeHistogram[grayPixel[0]])
                 pixelMap[i,j] = (grayShade, grayShade, grayShade)
 
-        self.openNewWindow(copiedImage)
+        self.openNewWindow(copiedImage, "Histograma Equalizado")
 
-    def openNewWindow(self, displayedImage):
+    def openNewWindow(self, displayedImage, windowTitle):
         windowTkImage = ImageTk.PhotoImage(displayedImage)
 
         newWindow = Toplevel(self)
-        newWindow.title("Histograma equalizado")
+        newWindow.title(windowTitle)
 
         newCanvas = Canvas(newWindow, width = 550, height = 450)
         newCanvas.pack()
         newCanvas.create_image(10, 30, anchor = 'nw', image = windowTkImage)
         newCanvas.currentImage = windowTkImage
+
+    def histogramMatching(self):
+        originalImagePath = "./test_images/Space_187k.jpg"
+        targetImagePath = "./test_images/Gramado_72k.jpg"
+
+        originalImage = Image.open(originalImagePath)
+        targetImage = Image.open(targetImagePath)
+
+        originalImageMap = originalImage.load()
+        grayOriginalMap = self.getGreyImageMap(originalImage)
+        targetImageMap = targetImage.load()
+        grayTargetMap = self.getGreyImageMap(targetImage)
+
+        for i in range(0, originalImage.size[0]):
+            for j in range(0, originalImage.size[1]):
+                originalImageMap[i,j] = grayOriginalMap[i,j]
+
+        for i in range(0, targetImage.size[0]):
+            for j in range(0, targetImage.size[1]):
+                targetImageMap[i,j] = grayTargetMap[i,j]
+
+        originalImage.thumbnail((512, 512))
+        targetImage.thumbnail((512, 512))
+
+        editedImage = originalImage.copy()
+
+        self.openNewWindow(originalImage, "Original Image")
+        self.openNewWindow(editedImage, "HM Image")
+        self.openNewWindow(targetImage, "Target")
 
 imageProcessor = ImageProcessor()
 imageProcessor.mainloop()
