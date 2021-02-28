@@ -314,8 +314,8 @@ class ImageProcessor(Tk):
         originalImagePath = "./test_images/Space_187k.jpg"
         targetImagePath = "./test_images/Gramado_72k.jpg"
 
-        originalImage = Image.open(originalImagePath)
-        targetImage = Image.open(targetImagePath)
+        originalImage = Image.open(originalImagePath).convert('RGB')
+        targetImage = Image.open(targetImagePath).convert('RGB')
 
         originalImageMap = originalImage.load()
         grayOriginalMap = self.getGreyImageMap(originalImage)
@@ -335,9 +335,42 @@ class ImageProcessor(Tk):
 
         editedImage = originalImage.copy()
 
+        r,g,b = originalImage.split()
+        originalHistogram = r.histogram()
+        originalScalingFactor = 255 / (originalImage.size[0] * originalImage.size[1])
+        originalCummulativeHistogram = [originalScalingFactor * originalHistogram[0]]
+
+        for i in range(1, len(originalHistogram)):
+            originalCummulativeHistogram.append(originalScalingFactor * originalHistogram[i] + originalCummulativeHistogram[i - 1])
+
+        r,g,b = targetImage.split()
+        targetHistogram = r.histogram()
+        targetScalingFactor = 255 / (targetImage.size[0] * targetImage.size[1])
+        targetCummulativeHistogram = [targetScalingFactor * targetHistogram[0]]
+
+        for i in range(1, len(targetHistogram)):
+            targetCummulativeHistogram.append(targetScalingFactor * targetHistogram[i] + targetCummulativeHistogram[i - 1])
+
+        editedHistogram = []
+        editedImageMap = editedImage.load()
+
+        for i in range(0, len(targetCummulativeHistogram)):
+            editedHistogram.append(self.find_nearest(targetCummulativeHistogram, originalCummulativeHistogram[i]))
+
+        for i in range(0, originalImage.size[0]):
+            for j in range(0, originalImage.size[1]):
+                grayShade = int(editedHistogram[originalImageMap[i,j][0]])
+                editedImageMap[i,j] = (grayShade, grayShade, grayShade)
+
         self.openNewWindow(originalImage, "Original Image")
         self.openNewWindow(editedImage, "HM Image")
         self.openNewWindow(targetImage, "Target")
+
+    # Source: https://stackoverflow.com/questions/2566412/find-nearest-value-in-numpy-array
+    def find_nearest(self, array, value):
+        n = [abs(i-value) for i in array]
+        idx = n.index(min(n))
+        return array[idx]
 
 imageProcessor = ImageProcessor()
 imageProcessor.mainloop()
