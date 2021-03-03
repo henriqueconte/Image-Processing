@@ -8,6 +8,7 @@ class ImageProcessor(Tk):
     contrastCount = 0
     zoomCout = 0
     isCurrentlyGray = False
+    scaleValue = 1
 
     def __init__(self):
         Tk.__init__(self)
@@ -65,6 +66,35 @@ class ImageProcessor(Tk):
         self.counterClockwiseRotationButton.pack(side='left')
 
         secondRowButtonFrame.pack(fill = 'x', pady = 1)
+
+        ### THIRD ROW
+        thirdRowButtonFrame = Frame(self, bd=3)
+
+        convolutionOptions = [
+            '-',
+            'Gaussiano',
+            'Laplaciano',
+            'Passa alta genérico',
+            'Prewitt Hx',
+            'Prewitt Hy',
+            'Sobel Hx',
+            'Sobel Hy'
+        ]
+        # Creates interface buttons
+        self.convolutionLabel = Label(thirdRowButtonFrame, text='Filtro para convolução: ')
+        self.menuValue = StringVar(self)
+        self.menuValue.set(convolutionOptions[0])
+        self.convolutionMenu = OptionMenu(thirdRowButtonFrame, self.menuValue, *convolutionOptions)
+        self.filterIntensityLabel = Label(thirdRowButtonFrame, text='       Peso do filtro: ')
+        self.convolutionScale = Scale(thirdRowButtonFrame,  from_=1, to=10, length = 200, orient=HORIZONTAL, command=self.updateScaleValue)
+
+        # Setups buttons on canvas
+        self.convolutionLabel.pack(side='left')
+        self.convolutionMenu.pack(side='left')
+        self.filterIntensityLabel.pack(side='left')
+        self.convolutionScale.pack(side='left')
+
+        thirdRowButtonFrame.pack(fill = 'x', pady = 2)
 
         # Creates canvas
         self.canvas = Canvas(self, bd = 0, highlightthickness = 0, width = 200, height = 200)
@@ -473,6 +503,9 @@ class ImageProcessor(Tk):
         self.workingImage = copiedImg
         self.updateImage(self.workingImage)
         
+    def updateScaleValue(self, v):
+        self.scaleValue = v
+        # print(self.menuValue.get())
 
 
 
