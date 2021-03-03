@@ -460,7 +460,18 @@ class ImageProcessor(Tk):
         self.updateImage(self.workingImage)
 
     def counterClockwiseRotation(self):
-        pass
+        newWidth, newHeight = self.workingImage.size[1], self.workingImage.size[0]
+        copiedImg = Image.new('RGB', (newWidth, newHeight))
+        copiedImgMap = copiedImg.load()
+
+        for i in range(0, self.workingImage.size[0]):
+            for j in range(0, self.workingImage.size[1]):
+                xPosition = copiedImg.size[1] - i - 1
+                r, g, b = self.workingImage.getpixel((i, j))
+                copiedImgMap[j, xPosition] = (r, g, b)
+
+        self.workingImage = copiedImg
+        self.updateImage(self.workingImage)
         
 
 
