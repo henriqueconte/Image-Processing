@@ -84,7 +84,7 @@ class ImageProcessor(Tk):
         self.convolutionLabel = Label(thirdRowButtonFrame, text='Filtro para convolução: ')
         self.menuValue = StringVar(self)
         self.menuValue.set(convolutionOptions[0])
-        self.convolutionMenu = OptionMenu(thirdRowButtonFrame, self.menuValue, *convolutionOptions)
+        self.convolutionMenu = OptionMenu(thirdRowButtonFrame, self.menuValue, *convolutionOptions, command=self.applyConvolutionFilter)
         self.filterIntensityLabel = Label(thirdRowButtonFrame, text='       Peso do filtro: ')
         self.convolutionScale = Scale(thirdRowButtonFrame,  from_=1, to=10, length = 200, orient=HORIZONTAL, command=self.updateScaleValue)
 
@@ -503,10 +503,30 @@ class ImageProcessor(Tk):
         self.workingImage = copiedImg
         self.updateImage(self.workingImage)
         
-    def updateScaleValue(self, v):
-        self.scaleValue = v
+    def updateScaleValue(self, value):
+        self.scaleValue = value
         # print(self.menuValue.get())
 
+    def applyConvolutionFilter(self, value):
+        if value == '-':
+            #TODO: Implement reset method
+            pass
+        elif value == 'Gaussiano':
+            kernel = [ [0.0625, 0.125, 0.0625], [0.125, 0.25, 0.125], [0.0625, 0.125, 0.0625] ]
+        elif value == 'Laplaciano':
+            kernel = [ [0, -1, 0], [-1, 4, -1], [0, -1, 0] ]
+        elif value == 'Passa alta genérico':
+            kernel = [ [-1, -1, -1], [-1, 8, -1], [-1, -1, -1] ]
+        elif value == 'Prewitt Hx':
+            kernel = [ [-1, 0, 1], [-1, 0, 1], [-1, 0, 1] ]
+        elif value == 'Prewitt Hy':
+            kernel = [ [-1, -1, -1], [0, 0, 0], [1, 1, 1] ]
+        elif value == 'Sobel Hx':
+            kernel = [ [-1, 0, 1], [-2, 0, 2], [-1, 0, 1] ]
+        elif value == 'Sobel Hy':
+            kernel = [ [-1, -2, -1], [0, 0, 0], [1, 2, 1] ]
+
+    
 
 
 imageProcessor = ImageProcessor()
