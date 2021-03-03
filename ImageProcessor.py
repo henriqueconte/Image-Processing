@@ -6,6 +6,7 @@ class ImageProcessor(Tk):
 
     brightnessCount = 0
     contrastCount = 0
+    zoomCout = 0
     isCurrentlyGray = False
 
     def __init__(self):
@@ -47,6 +48,8 @@ class ImageProcessor(Tk):
         self.negativeImageButton = Button(secondRowButtonFrame, text="Negativo", command = self.negativeImage)
         self.histogramEqualizationButton = Button(secondRowButtonFrame, text="Equalização de histograma", command = self.greyHistogramEqualization)
         self.histogramMatchingButton = Button(secondRowButtonFrame, text="Histogram matching", command = self.histogramMatching)
+        self.zoomInButton = Button(secondRowButtonFrame, text="Zoom in", command = self.zoomIn)
+        self.zoomOutButton = Button(secondRowButtonFrame, text="Zoom out", command = self.zoomOut)
 
         # Setups buttons on canvas
         self.decreaseConstrastButton.pack(side='left')
@@ -54,6 +57,8 @@ class ImageProcessor(Tk):
         self.negativeImageButton.pack(side='left')
         self.histogramEqualizationButton.pack(side='left')
         self.histogramMatchingButton.pack(side = 'left')
+        self.zoomInButton.pack(side='left')
+        self.zoomOutButton.pack(side='left')
 
         secondRowButtonFrame.pack(fill = 'x', pady = 1)
 
@@ -297,15 +302,18 @@ class ImageProcessor(Tk):
                 grayShade = int(cummulativeHistogram[grayPixel[0]])
                 pixelMap[i,j] = (grayShade, grayShade, grayShade)
 
-        self.openNewWindow(copiedImage, "Histograma Equalizado")
+        self.openNewWindow(copiedImage, "Histograma Equalizado", False)
 
-    def openNewWindow(self, displayedImage, windowTitle):
+    def openNewWindow(self, displayedImage, windowTitle, isBigWindow):
         windowTkImage = ImageTk.PhotoImage(displayedImage)
 
         newWindow = Toplevel(self)
         newWindow.title(windowTitle)
-
-        newCanvas = Canvas(newWindow, width = 550, height = 450)
+        if isBigWindow:
+            newCanvas = Canvas(newWindow, width = 1100, height = 1100)
+        else:
+            newCanvas = Canvas(newWindow, width = 550, height = 450)
+        
         newCanvas.pack()
         newCanvas.create_image(10, 30, anchor = 'nw', image = windowTkImage)
         newCanvas.currentImage = windowTkImage
@@ -362,15 +370,85 @@ class ImageProcessor(Tk):
                 grayShade = int(editedHistogram[originalImageMap[i,j][0]])
                 editedImageMap[i,j] = (grayShade, grayShade, grayShade)
 
-        self.openNewWindow(originalImage, "Original Image")
-        self.openNewWindow(editedImage, "HM Image")
-        self.openNewWindow(targetImage, "Target")
+        self.openNewWindow(originalImage, "Original Image", False)
+        self.openNewWindow(editedImage, "HM Image", False)
+        self.openNewWindow(targetImage, "Target", False)
 
     # Source: https://stackoverflow.com/questions/2566412/find-nearest-value-in-numpy-array
     def find_nearest(self, array, value):
         n = [abs(i-value) for i in array]
         idx = n.index(min(n))
         return array[idx]
+
+    def zoomIn(self):
+        sx = 2
+        sy = 2
+        newWidth, newHeight = int(self.workingImage.size[0] * sx), int(self.workingImage.size[1] * sy)
+        copiedImg = Image.new('RGB', (newWidth, newHeight))
+        copiedImgMap = copiedImg.load()
+
+        j = 0
+        while (j < newHeight):
+            for i in range(0, newWidth):
+                if i % 2 == 0:
+                    r,g,b = self.workingImage.getpixel((i / 2, j / 2))
+                    copiedImgMap[i,j] = (int(r / (sx * sy)), int(g / (sx * sy)), int(b / (sx * sy)))
+                elif (i + 1) / 2 < self.workingImage.size[0]:
+                    prevR, prevG, prevB = self.workingImage.getpixel(((i-1) / 2, j / 2))
+                    nextR, nextG, nextB = self.workingImage.getpixel(((i+1) / 2, j / 2))
+                    prevR, prevG, prevB = int((prevR + nextR) / 2), int((prevG + nextG) / 2), int((prevB + nextB) / 2)
+                    copiedImgMap[i,j] = (prevR, prevG, prevB)
+                else:
+                    r,g,b = self.workingImage.getpixel(((i-1) / 2, j / 2))
+                    copiedImgMap[i,j] = (r, g, b)
+            j += 2
+
+        for i in range(0, newWidth):
+            j = 1
+            while (j < newHeight - 1):
+                if (j + 1) / 2 < self.workingImage.size[1]:
+                    prevR, prevG, prevB = self.workingImage.getpixel((i/2, (j-1)/2))
+                    nextR, nextG, nextB = self.workingImage.getpixel((i/2, (j+1)/2))
+                    prevR, prevG, prevB = int((prevR + nextR) / 2), int((prevG + nextG) / 2), int((prevB + nextB) / 2)
+                    copiedImgMap[i,j] = (prevR, prevG, prevB)
+                else:
+                    r,g,b = self.workingImage.getpixel((i/2, (j-1)/2))
+                    copiedImgMap[i,j] = (r, g, b) 
+                j += 2
+
+        self.openNewWindow(copiedImg, "Imagem com zoom in", True)
+
+    def zoomOut(self):
+        sx = 2
+        sy = 2
+        newWidth, newHeight = int(self.workingImage.size[0] / sx), int(self.workingImage.size[1] / sy)
+        copiedImg = Image.new('RGB', (newWidth, newHeight))
+        copiedImgMap = copiedImg.load()
+        for i in range(0, newWidth):
+            for j in range(0, newHeight):
+                i_old = i * sx
+                currentColor = [0, 0, 0]
+                while i_old < sx * (i + 1) and i_old < self.workingImage.size[0] - 1:
+                    i_old += 1
+                    j_old = j * sy
+                    while j_old < sy * (j + 1) and j_old < self.workingImage.size[1] - 1:
+                        j_old += 1
+                        r,g,b = self.workingImage.getpixel((i_old, j_old))
+                        currentColor[0] += r
+                        currentColor[1] += g
+                        currentColor[2] += b
+                copiedImgMap[i,j] = (int(currentColor[0] / (sx * sy)), int(currentColor[1] / (sx * sy)), int(currentColor[2] / (sx * sy)))
+
+        self.openNewWindow(copiedImg, 'Imagem com zoom out', False)
+
+    def clockwiseRotation(self):
+        pass
+
+    def counterClockwiseRotation(self):
+        pass
+        
+
+
 
 imageProcessor = ImageProcessor()
 imageProcessor.mainloop()
