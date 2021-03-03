@@ -50,6 +50,8 @@ class ImageProcessor(Tk):
         self.histogramMatchingButton = Button(secondRowButtonFrame, text="Histogram matching", command = self.histogramMatching)
         self.zoomInButton = Button(secondRowButtonFrame, text="Zoom in", command = self.zoomIn)
         self.zoomOutButton = Button(secondRowButtonFrame, text="Zoom out", command = self.zoomOut)
+        self.clockwiseRotationButton = Button(secondRowButtonFrame, text="Sentido horário", command = self.clockwiseRotation)
+        self.counterClockwiseRotationButton = Button(secondRowButtonFrame, text="Sentido anti-horário", command = self.counterClockwiseRotation)
 
         # Setups buttons on canvas
         self.decreaseConstrastButton.pack(side='left')
@@ -59,6 +61,8 @@ class ImageProcessor(Tk):
         self.histogramMatchingButton.pack(side = 'left')
         self.zoomInButton.pack(side='left')
         self.zoomOutButton.pack(side='left')
+        self.clockwiseRotationButton.pack(side='left')
+        self.counterClockwiseRotationButton.pack(side='left')
 
         secondRowButtonFrame.pack(fill = 'x', pady = 1)
 
@@ -442,7 +446,18 @@ class ImageProcessor(Tk):
         self.openNewWindow(copiedImg, 'Imagem com zoom out', False)
 
     def clockwiseRotation(self):
-        pass
+        newWidth, newHeight = self.workingImage.size[1], self.workingImage.size[0]
+        copiedImg = Image.new('RGB', (newWidth, newHeight))
+        copiedImgMap = copiedImg.load()
+
+        for i in range(0, self.workingImage.size[0]):
+            for j in range(0, self.workingImage.size[1]):
+                yPosition = copiedImg.size[0] - j - 1
+                r, g, b = self.workingImage.getpixel((i, j))
+                copiedImgMap[yPosition, i] = (r, g, b)
+
+        self.workingImage = copiedImg
+        self.updateImage(self.workingImage)
 
     def counterClockwiseRotation(self):
         pass
