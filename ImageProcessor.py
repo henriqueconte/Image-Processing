@@ -102,8 +102,8 @@ class ImageProcessor(Tk):
         self.canvas.pack(fill = "both", expand = 1)
 
         # Setups original image
-        imagePath = "./test_images/Space_187k.jpg"
-        self.originalImage = Image.open(imagePath).convert('RGB')
+        self.imagePath = "./test_images/Space_187k.jpg"
+        self.originalImage = Image.open(self.imagePath).convert('RGB')
         self.originalImage.thumbnail((512, 512))
 
         # Setups working image
@@ -302,9 +302,9 @@ class ImageProcessor(Tk):
         for i in range(0, self.originalImage.size[0]):
             for j in range(0, self.originalImage.size[1]):
                 pixel = originalPixelMap[i,j]
-                pixel0 = pow(pixel[0], (1 + (self.brightnessCount * 0.05)))
-                pixel1 = pow(pixel[1], (1 + (self.brightnessCount * 0.05)))
-                pixel2 = pow(pixel[2], (1 + (self.brightnessCount * 0.05)))
+                pixel0 = pixel[0] * (1 + (self.brightnessCount * 0.2))
+                pixel1 = pixel[1] * (1 + (self.brightnessCount * 0.2))
+                pixel2 = pixel[2] * (1 + (self.brightnessCount * 0.2))
                 if pixel0 < 0:
                     pixel0 = 0
                 if pixel1 < 0:
@@ -338,7 +338,6 @@ class ImageProcessor(Tk):
         grayImage = self.getGreyImage(self.workingImage)
         copiedImage = self.workingImage.copy()
         scalingFactor = 255 / (copiedImage.size[0] * copiedImage.size[1])
-        r,g,b = grayImage.split()
         histogram = self.getHistogram(grayImage, 'R')
         cummulativeHistogram = [scalingFactor * histogram[0]]
 
@@ -381,7 +380,7 @@ class ImageProcessor(Tk):
         newCanvas.currentImage = windowTkImage
 
     def histogramMatching(self):
-        originalImagePath = "./test_images/Space_187k.jpg"
+        originalImagePath = self.imagePath
         targetImagePath = "./test_images/Gramado_72k.jpg"
 
         originalImage = Image.open(originalImagePath).convert('RGB')
@@ -405,7 +404,6 @@ class ImageProcessor(Tk):
 
         editedImage = originalImage.copy()
 
-        r,g,b = originalImage.split()
         originalHistogram = self.getHistogram(originalImage, 'R')
         originalScalingFactor = 255 / (originalImage.size[0] * originalImage.size[1])
         originalCummulativeHistogram = [originalScalingFactor * originalHistogram[0]]
@@ -413,7 +411,6 @@ class ImageProcessor(Tk):
         for i in range(1, len(originalHistogram)):
             originalCummulativeHistogram.append(originalScalingFactor * originalHistogram[i] + originalCummulativeHistogram[i - 1])
 
-        r,g,b = targetImage.split()
         targetHistogram = self.getHistogram(targetImage, 'R')
         targetScalingFactor = 255 / (targetImage.size[0] * targetImage.size[1])
         targetCummulativeHistogram = [targetScalingFactor * targetHistogram[0]]
