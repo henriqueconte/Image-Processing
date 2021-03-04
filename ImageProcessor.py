@@ -1,6 +1,7 @@
 from tkinter import * 
 from PIL import Image, ImageTk, ImageDraw, ImageOps, ImageEnhance
 import matplotlib.pyplot as plt 
+import numpy as np
 
 class ImageProcessor(Tk):
 
@@ -102,7 +103,7 @@ class ImageProcessor(Tk):
 
         # Setups original image
         imagePath = "./test_images/Space_187k.jpg"
-        self.originalImage = Image.open(imagePath)
+        self.originalImage = Image.open(imagePath).convert('RGB')
         self.originalImage.thumbnail((512, 512))
 
         # Setups working image
@@ -513,18 +514,62 @@ class ImageProcessor(Tk):
             pass
         elif value == 'Gaussiano':
             kernel = [ [0.0625, 0.125, 0.0625], [0.125, 0.25, 0.125], [0.0625, 0.125, 0.0625] ]
+            self.convolution2d(kernel, False)
         elif value == 'Laplaciano':
             kernel = [ [0, -1, 0], [-1, 4, -1], [0, -1, 0] ]
+            self.convolution2d(kernel, True)
         elif value == 'Passa alta genérico':
             kernel = [ [-1, -1, -1], [-1, 8, -1], [-1, -1, -1] ]
+            self.convolution2d(kernel, False)
         elif value == 'Prewitt Hx':
             kernel = [ [-1, 0, 1], [-1, 0, 1], [-1, 0, 1] ]
+            self.convolution2d(kernel, True)
         elif value == 'Prewitt Hy':
             kernel = [ [-1, -1, -1], [0, 0, 0], [1, 1, 1] ]
+            self.convolution2d(kernel, True)
         elif value == 'Sobel Hx':
             kernel = [ [-1, 0, 1], [-2, 0, 2], [-1, 0, 1] ]
+            self.convolution2d(kernel, True)
         elif value == 'Sobel Hy':
             kernel = [ [-1, -2, -1], [0, 0, 0], [1, 2, 1] ]
+            self.convolution2d(kernel, True)
+
+
+    def convolution2d(self, filterMatrix, shouldClamp):
+        matrixSize = len(filterMatrix)
+        grayImg = self.getGreyImage(self.workingImage).copy()
+        copiedImg = Image.new('RGB', (grayImg.size[0], grayImg.size[1]))
+        copiedImgMap = copiedImg.load()
+
+        # Rotates matrix with 180 degree
+        rotatedMatrix = np.empty([matrixSize, matrixSize])
+        for i in range(0, matrixSize):
+            for j in range(0, matrixSize):
+                rotatedMatrix[i, j] = filterMatrix[matrixSize - i - 1][matrixSize - j - 1]
+
+        for i in range(1, copiedImg.size[0] - 1):
+            for j in range(1, copiedImg.size[1] - 1):
+                pixelSum = 0
+                for kernelI in range(-1, 2):
+                    for kernelJ in range(-1, 2):
+                        kR, kG, kB = grayImg.getpixel((i + kernelI, j + kernelJ))
+                        pixelSum += (rotatedMatrix[kernelI + 1][kernelJ + 1] * (kR))
+
+                pixelSum = int(pixelSum)
+                if shouldClamp:
+                    pixelSum += 127
+                    pixelSum = self.adjustColor(pixelSum)
+                copiedImgMap[i,j] = (pixelSum, pixelSum, pixelSum)
+
+        self.openNewWindow(copiedImg, 'Convolve 2d', False)
+
+    def adjustColor(self, colorValue):
+        if colorValue > 255:
+            return 255
+        elif colorValue < 0:
+            return 0
+        else:
+            return int(colorValue)
 
     
 
