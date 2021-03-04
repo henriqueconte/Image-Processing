@@ -546,20 +546,21 @@ class ImageProcessor(Tk):
         for i in range(0, matrixSize):
             for j in range(0, matrixSize):
                 rotatedMatrix[i, j] = filterMatrix[matrixSize - i - 1][matrixSize - j - 1]
+        for convCount in range(0, int(self.scaleValue)):
+            for i in range(1, copiedImg.size[0] - 1):
+                for j in range(1, copiedImg.size[1] - 1):
+                    pixelSum = 0
+                    for kernelI in range(-1, 2):
+                        for kernelJ in range(-1, 2):
+                            kR, kG, kB = grayImg.getpixel((i + kernelI, j + kernelJ))
+                            pixelSum += (rotatedMatrix[kernelI + 1][kernelJ + 1] * (kR))
 
-        for i in range(1, copiedImg.size[0] - 1):
-            for j in range(1, copiedImg.size[1] - 1):
-                pixelSum = 0
-                for kernelI in range(-1, 2):
-                    for kernelJ in range(-1, 2):
-                        kR, kG, kB = grayImg.getpixel((i + kernelI, j + kernelJ))
-                        pixelSum += (rotatedMatrix[kernelI + 1][kernelJ + 1] * (kR))
-
-                pixelSum = int(pixelSum)
-                if shouldClamp:
-                    pixelSum += 127
-                    pixelSum = self.adjustColor(pixelSum)
-                copiedImgMap[i,j] = (pixelSum, pixelSum, pixelSum)
+                    pixelSum = int(pixelSum)
+                    if shouldClamp:
+                        pixelSum += 127
+                        pixelSum = self.adjustColor(pixelSum)
+                    copiedImgMap[i,j] = (pixelSum, pixelSum, pixelSum)
+            grayImg = copiedImg
 
         self.openNewWindow(copiedImg, 'Convolve 2d', False)
 
