@@ -229,18 +229,35 @@ class ImageProcessor(Tk):
         self.workingTkImage = ImageTk.PhotoImage(newImage)
         self.canvas.itemconfigure(self.workingCanvasItem, image = self.workingTkImage)
 
-    def showHistogram(self):
-        copiedImage = self.getGreyImage(self.workingImage)
-        r,g,b = copiedImage.split()
-        histValues = r.histogram()
+    def getHistogram(self, img, channel):
+        if channel == 'R':
+            channel = 0
+        elif channel == 'G':
+            channel = 1
+        else:
+            channel = 2
+        histogram = np.zeros((256))
+        imgMap = img.load()
+        for i in range(img.size[0]):
+            for j in range(img.size[1]):
+                histogram[imgMap[i,j][channel]] += 1
+
+        return histogram
+
+    def plotHistogram(self, histogram):
         histSum = 0
 
-        for element in histValues:
+        for element in histogram:
             histSum += element
         for i in range(0, 256):
-            plt.bar(i, histValues[i] / histSum , color = 'green')
+            plt.bar(i, histogram[i] / histSum , color = 'green')
 
         plt.show()
+
+    def showHistogram(self):
+        copiedImage = self.getGreyImage(self.workingImage).copy()
+        histogram = self.getHistogram(copiedImage, 'R')
+        self.plotHistogram(histogram)
 
     def changeBrightness(self):
         if self.isCurrentlyGray:
@@ -322,7 +339,7 @@ class ImageProcessor(Tk):
         copiedImage = self.workingImage.copy()
         scalingFactor = 255 / (copiedImage.size[0] * copiedImage.size[1])
         r,g,b = grayImage.split()
-        histogram = r.histogram()
+        histogram = self.getHistogram(grayImage, 'R')
         cummulativeHistogram = [scalingFactor * histogram[0]]
 
         for i in range(1, len(histogram)):
@@ -338,6 +355,16 @@ class ImageProcessor(Tk):
                 pixelMap[i,j] = (grayShade, grayShade, grayShade)
 
         self.openNewWindow(copiedImage, "Histograma Equalizado", False)
+
+        rWorkingImgHist = np.array(self.getHistogram(self.workingImage, 'R'))
+        gWorkingImgHist = np.array(self.getHistogram(self.workingImage, 'G'))
+        bWorkingImgHist = np.array(self.getHistogram(self.workingImage, 'B'))
+
+        if np.array_equal(rWorkingImgHist, gWorkingImgHist) and np.array_equal(gWorkingImgHist, bWorkingImgHist):
+            equalizedHistogram = self.getHistogram(copiedImage, 'R')
+            self.plotHistogram(histogram)
+            self.plotHistogram(equalizedHistogram)
+
 
     def openNewWindow(self, displayedImage, windowTitle, isBigWindow):
         windowTkImage = ImageTk.PhotoImage(displayedImage)
@@ -379,7 +406,7 @@ class ImageProcessor(Tk):
         editedImage = originalImage.copy()
 
         r,g,b = originalImage.split()
-        originalHistogram = r.histogram()
+        originalHistogram = self.getHistogram(originalImage, 'R')
         originalScalingFactor = 255 / (originalImage.size[0] * originalImage.size[1])
         originalCummulativeHistogram = [originalScalingFactor * originalHistogram[0]]
 
@@ -387,7 +414,7 @@ class ImageProcessor(Tk):
             originalCummulativeHistogram.append(originalScalingFactor * originalHistogram[i] + originalCummulativeHistogram[i - 1])
 
         r,g,b = targetImage.split()
-        targetHistogram = r.histogram()
+        targetHistogram = self.getHistogram(targetImage, 'R')
         targetScalingFactor = 255 / (targetImage.size[0] * targetImage.size[1])
         targetCummulativeHistogram = [targetScalingFactor * targetHistogram[0]]
 
